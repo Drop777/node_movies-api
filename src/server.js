@@ -1,6 +1,11 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const bodyParser = require('body-parser');
+const uuid = require('uuid/v4');
+
+const jsonParser = bodyParser.json();
+const id = uuid();
 
 const app = express();
 const port = 4000;
@@ -63,5 +68,87 @@ app.get('/movies/:id', (req, res) => {
 app.get('/', (req, res) => {
   res.send("hi from main page");
 })
+
+app.post('/movies', jsonParser, (req, res) => {
+  const { title, imdbRating, year } = req.body;
+  const newMovie = {
+    imdbRating,
+    title,
+    year,
+    id: id,
+  };
+  const movies = JSON.parse(fs.readFileSync(JSON_PATH));
+  dataWithNewFilm = [...movies, newMovie];
+  fs.writeFile(JSON_PATH, JSON.stringify(dataWithNewFilm), (err) => {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      res.json(newMovie);
+    }
+  });
+})
+
+app.put('/movies/:id', jsonParser, (req, res) => {
+  const { title, imdbRating, year } = req.body;
+  const newDataForMovie = {
+    title,
+    imdbRating,
+    year
+  };
+  const movieWithChange = JSON.parse(fs.readFileSync(JSON_PATH))
+    .map(movie => {
+      if (movie.id === req.params.id) {
+        return ({
+          ...movie,
+          title,
+          imdbRating,
+          year,
+        })
+      }
+      return movie;
+    });
+  fs.writeFile(JSON_PATH, JSON.stringify(movieWithChange), (err) => {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      res.json(newDataForMovie);
+    }
+  });
+});
+
+app.patch('/movies/:id', jsonParser, (req, res) => {
+  const newDataForMovie = {
+    ...req.body
+  };
+  const movieWithChange = JSON.parse(fs.readFileSync(JSON_PATH))
+    .map(movie => {
+      if (movie.id === req.params.id) {
+        return ({
+          ...movie,
+          ...req.body,
+        })
+      }
+      return movie;
+    });
+  fs.writeFile(JSON_PATH, JSON.stringify(movieWithChange), (err) => {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      res.json(newDataForMovie);
+    }
+  });
+});
+
+app.delete('/movies/:id', jsonParser, (req, res) => {
+  const newMoviesList = JSON.parse(fs.readFileSync(JSON_PATH)).filter(movie => movie.id !== req.params.id);
+  fs.writeFile(JSON_PATH, JSON.stringify(newMoviesList), (err) => {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      res.sendStatus(204);
+    }
+  })
+});
+
 
 app.listen(port, () => console.log('response'))
